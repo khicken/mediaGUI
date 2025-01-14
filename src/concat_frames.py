@@ -1,7 +1,6 @@
 import os
 import cv2
 import numpy as np
-
 def concat_frames(input_video_files, output_video_path, output_file_name):
     """
     Combine extracted frames from multiple videos into a single video.
