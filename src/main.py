@@ -57,13 +57,21 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
         
-        # Ready to concatenate checkbox
+        # Process video
         self.process_button = QPushButton("Process video")
         self.process_button.clicked.connect(self.process_videos)
         layout.addWidget(self.process_button)
         
         self.status_label = QLabel("")
         layout.addWidget(self.status_label)
+
+        # Add speed multiplier label
+        step_layout.addSpacing(20)  # Add some space between controls
+        self.speed_label = QLabel("(1x speed)")
+        self.speed_label.setStyleSheet("color: #666;")  # Subtle gray color
+        step_layout.addWidget(self.speed_label)
+        
+        layout.addWidget(step_group)
         
         self.video_files = []
 
@@ -128,6 +136,21 @@ class MainWindow(QMainWindow):
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
+    
+    def update_step_suffix(self, value):
+        """Update the spinbox suffix and speed indicator based on the value"""
+        suffix = " frame" if value == 1 else " frames"
+        self.frame_step_spinbox.setSuffix(suffix)
+        
+        # Update speed multiplier label
+        speed_text = "Normal speed" if value == 1 else f"{value}x faster"
+        self.speed_label.setText(f"({speed_text})")
+        
+        # Make the speed label red when speed is high (>10x)
+        if value > 10:
+            self.speed_label.setStyleSheet("color: #e74c3c;")  # Red for high speeds
+        else:
+            self.speed_label.setStyleSheet("color: #666;")  # Normal gray
         
     def concatenation_finished(self):
         self.status_label.setText("Concatenation complete!")
