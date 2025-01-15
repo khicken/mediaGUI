@@ -1,4 +1,4 @@
-name: mf_gui
+name: mediagui
 channels:
   - defaults
   - conda-forge
@@ -18,11 +18,9 @@ dependencies:
   - numpy=2.2.1
   - numpy-base=2.2.1
   - openssl=3.0.15
-  - packaging=24.2
   - pip=24.2
   - python=3.13.1
   - python_abi=3.13
-  - qtpy=2.4.1
   - readline=8.2
   - setuptools=72.1.0
   - sqlite=3.45.3
@@ -33,5 +31,7 @@ dependencies:
   - zlib=1.2.13
   - pip:
       - opencv-python==4.10.0.84
-      - see==1.4.1
-prefix: /Users/kaleb/Documents/Software/miniforge3/envs/mf_gui
+      - pyqt6==6.8.0
+      - pyqt6-qt6==6.8.1
+      - pyqt6-sip==13.9.1
+prefix: /Users/kaleb/Documents/Software/miniforge3/envs/mediagui

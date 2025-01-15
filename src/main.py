@@ -3,7 +3,6 @@ from pathlib import Path
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel, 
                             QProgressBar, QSpinBox, QGroupBox)
-from PyQt6.QtCore import Qt
 from concat_worker import VideoConcatenationWorker
 
 class MainWindow(QMainWindow):

@@ -1,0 +1,24 @@
+package:
+  name: mediagui
+  version: "1.0.0"
+
+source:
+  path: .
+
+requirements:
+  host:
+    - python
+    - setuptools
+  run:
+    - python>=3.8
+    - pyqt6
+    - opencv
+    - numpy
+
+app:
+  entry: python -m mediagui
+  
+about:
+  home: YOUR_REPOSITORY_URL
+  license: MIT
+  summary: 'Cross-platform video concatenation and speedup tool'
