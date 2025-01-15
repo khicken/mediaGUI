@@ -1,3 +1,5 @@
+# gui.py
+
 import sys
 from pathlib import Path
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
