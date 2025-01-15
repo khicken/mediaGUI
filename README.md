@@ -1,6 +1,6 @@
 # mediaGUI
 ## Data preprocessor intended for SLEAP/DLC
-Cross-platform GUI to concatenate and speed up video(s).
+Cross-platform tool (GUI) to concatenate and speed up video(s).
 
 Packaged in Conda, call it in the CLI.
 
