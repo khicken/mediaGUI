@@ -1,9 +1,4 @@
 # mediaGUI
-## Data preprocessor intended for SLEAP/DLC
-Cross-platform tool (GUI) to concatenate and speed up video(s).
+## This is archived!
 
-Packaged in Conda, call it in the CLI.
-
-If replicating the repo to build, run:
-- `conda env create -f environment.yml`
-- `conda activate mediagui`
+Kemal's og MATLAB code before it got replaced by modern tech
