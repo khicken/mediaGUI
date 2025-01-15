@@ -19,6 +19,6 @@ app:
   entry: python -m mediagui
   
 about:
-  home: YOUR_REPOSITORY_URL
+  home: https://github.com/khicken/mediaGUI
   license: MIT
-  summary: 'Cross-platform video concatenation and speedup tool'
+  summary: 'Cross-platform tool (GUI) to concatenate and speed up video(s)'
