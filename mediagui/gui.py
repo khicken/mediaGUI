@@ -2,15 +2,16 @@
 
 import sys
 from pathlib import Path
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel, 
                             QProgressBar, QSpinBox, QGroupBox)
-from concat_worker import VideoConcatenationWorker
+from mediagui.worker import VideoConcatenationWorker
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, mode=0):
         super().__init__()
-        self.setWindowTitle("Video Formatter")
+        self.setWindowTitle("mediaGUI")
         self.setMinimumSize(400, 400)
         
         # Main widget and layout
@@ -34,24 +35,61 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.remove_button)
         layout.addLayout(button_layout)
         
-        # Frame step controls group
-        step_group = QGroupBox()
-        step_layout = QHBoxLayout()
-        step_group.setLayout(step_layout)
-        
-        # Frame step spinbox
-        step_layout.addWidget(QLabel("Process every"))
-        self.frame_step_spinbox = QSpinBox()
-        self.frame_step_spinbox.setRange(1, 100)  # Allow steps from 1 to 100
-        self.frame_step_spinbox.setValue(1)
-        def update_step_value(value):
-            if value == 1: self.frame_step_spinbox.setSuffix(" frame")
-            else: self.frame_step_spinbox.setSuffix(" frames")
-        update_step_value(1)
-        self.frame_step_spinbox.valueChanged.connect(update_step_value)
-        step_layout.addWidget(self.frame_step_spinbox)
-        
-        layout.addWidget(step_group)
+        if mode == 0:
+            # Frame extraction controls group
+            extract_group = QGroupBox("Frame Extraction")
+            extract_layout = QHBoxLayout()
+            extract_layout.setContentsMargins(4, 4, 4, 4)
+            extract_group.setLayout(extract_layout)
+            
+            # Create a sub-layout for the spinbox and its label
+            spinbox_layout = QHBoxLayout()
+            spinbox_layout.setSpacing(10)
+            extract_label = QLabel("Extract")
+            extract_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            spinbox_layout.addWidget(extract_label)
+            
+            self.frame_count_spinbox = QSpinBox()
+            self.frame_count_spinbox.setRange(1, 1000)
+            self.frame_count_spinbox.setValue(30)
+            self.frame_count_spinbox.setMinimumWidth(70)
+            self.frame_count_spinbox.setSuffix(" frames")
+            spinbox_layout.addWidget(self.frame_count_spinbox)
+            
+            extract_layout.addLayout(spinbox_layout)
+            
+            # Add note about output
+            extract_layout.addStretch()
+            output_note = QLabel("Output will be played at 30 FPS")
+            output_note.setStyleSheet("color: #666; font-style: italic; margin: 0px;")
+            extract_layout.addWidget(output_note)
+            
+            layout.addWidget(extract_group)
+        elif mode == 1:
+            # Frame step controls group
+            step_group = QGroupBox()
+            step_layout = QHBoxLayout()
+            step_group.setLayout(step_layout)
+
+            # Frame step spinbox
+            step_layout.addWidget(QLabel("Process every"))
+            self.frame_step_spinbox = QSpinBox()
+            self.frame_step_spinbox.setRange(1, 100)  # Allow steps from 1 to 100
+            self.frame_step_spinbox.setValue(1)
+            def update_step_value(value):
+                if value == 1: self.frame_step_spinbox.setSuffix(" frame")
+                else: self.frame_step_spinbox.setSuffix(" frames")
+            update_step_value(1)
+            self.frame_step_spinbox.valueChanged.connect(update_step_value)
+            step_layout.addWidget(self.frame_step_spinbox)
+            
+            layout.addWidget(step_group)
+
+            # Add speed multiplier label
+            step_layout.addSpacing(20)  # Add some space between controls
+            self.speed_label = QLabel("(1x speed)")
+            self.speed_label.setStyleSheet("color: #666;")  # Subtle gray color
+            step_layout.addWidget(self.speed_label)
         
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -66,14 +104,10 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("")
         layout.addWidget(self.status_label)
 
-        # Add speed multiplier label
-        step_layout.addSpacing(20)  # Add some space between controls
-        self.speed_label = QLabel("(1x speed)")
-        self.speed_label.setStyleSheet("color: #666;")  # Subtle gray color
-        step_layout.addWidget(self.speed_label)
+        if mode == 1:
+            layout.addWidget(step_group)
         
-        layout.addWidget(step_group)
-        
+        self.mode = mode
         self.video_files = []
 
     def add_videos(self):
@@ -126,7 +160,8 @@ class MainWindow(QMainWindow):
             self.worker = VideoConcatenationWorker(
                 self.video_files, 
                 output_path,
-                frame_step=self.frame_step_spinbox.value()
+                mode=1,
+                param=self.frame_step_spinbox.value()
             )
             self.worker.progress.connect(self.update_progress)
             self.worker.finished.connect(self.concatenation_finished)
@@ -168,9 +203,12 @@ class MainWindow(QMainWindow):
         self.frame_step_spinbox.setEnabled(True)
         self.process_button.setEnabled(True)
 
-def main():
+def main(view):
     app = QApplication(sys.argv)
-    window = MainWindow()
+    if view:
+        window = MainWindow(view)
+    else:
+        window = MainWindow()
     window.show()
     sys.exit(app.exec())
 
