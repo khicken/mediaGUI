@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel, 
                             QProgressBar, QSpinBox, QGroupBox)
-from mediagui.worker import VideoConcatenationWorker
+from worker import VideoConcatenationWorker
 
 class MainWindow(QMainWindow):
     def __init__(self, mode=0):
@@ -51,10 +51,11 @@ class MainWindow(QMainWindow):
             
             self.frame_count_spinbox = QSpinBox()
             self.frame_count_spinbox.setRange(1, 1000)
-            self.frame_count_spinbox.setValue(30)
+            self.frame_count_spinbox.setValue(100)
             self.frame_count_spinbox.setMinimumWidth(70)
             self.frame_count_spinbox.setSuffix(" frames")
             spinbox_layout.addWidget(self.frame_count_spinbox)
+            spinbox_layout.addWidget(QLabel(" per video"))
             
             extract_layout.addLayout(spinbox_layout)
             
@@ -91,15 +92,17 @@ class MainWindow(QMainWindow):
             self.speed_label.setStyleSheet("color: #666;")  # Subtle gray color
             step_layout.addWidget(self.speed_label)
         
+        
+
         # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
         
-        # Process video
-        self.process_button = QPushButton("Process video")
-        self.process_button.clicked.connect(self.process_videos)
-        layout.addWidget(self.process_button)
+        # Concatenate!
+        self.concat_button = QPushButton("Concatenate")
+        self.concat_button.clicked.connect(self.concat_videos)
+        layout.addWidget(self.concat_button)
         
         self.status_label = QLabel("")
         layout.addWidget(self.status_label)
@@ -132,10 +135,10 @@ class MainWindow(QMainWindow):
         self.file_list.clear()
         self.file_list.addItems([f.name for f in self.video_files])
 
-    def process_videos(self):
+    def concat_videos(self):
         if not self.video_files:
             self.status_label.setText("Please select videos first!")
-            self.process_button.setEnabled(True)
+            self.concat_button.setEnabled(True)
             return
 
         default_name = "concatenated_video.mp4"
@@ -160,7 +163,8 @@ class MainWindow(QMainWindow):
             self.worker = VideoConcatenationWorker(
                 self.video_files, 
                 output_path,
-                mode=1,
+                mode=self.mode,
+                output_fps=self.output_fps,
                 param=self.frame_step_spinbox.value()
             )
             self.worker.progress.connect(self.update_progress)
@@ -168,7 +172,7 @@ class MainWindow(QMainWindow):
             self.worker.error.connect(self.concatenation_error)
             self.worker.start()
         else:
-            self.process_button.setEnabled(True)
+            self.concat_button.setEnabled(True)
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
@@ -201,12 +205,12 @@ class MainWindow(QMainWindow):
         self.add_button.setEnabled(True)
         self.remove_button.setEnabled(True)
         self.frame_step_spinbox.setEnabled(True)
-        self.process_button.setEnabled(True)
+        self.concat_button.setEnabled(True)
 
-def main(view):
+def main(mode=0):
     app = QApplication(sys.argv)
-    if view:
-        window = MainWindow(view)
+    if mode:
+        window = MainWindow(mode)
     else:
         window = MainWindow()
     window.show()
