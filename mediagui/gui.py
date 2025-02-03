@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
             self.worker = VideoConcatenationWorker(
                 self.video_files, 
                 output_path,
-                frame_limit=self.frame_extract_spinbox.value(),
+                frames_per_video=self.frame_extract_spinbox.value(),
                 output_fps=self.output_fps_spinbox.value(),
                 output_format=self.output_format_combobox.currentText()
             )
