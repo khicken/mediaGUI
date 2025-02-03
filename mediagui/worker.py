@@ -17,6 +17,10 @@ class VideoConcatenationWorker(QThread):
         self.frames_per_video = frames_per_video
         self.output_fps = output_fps
         self.output_format = output_format
+
+        self.total_frames_read = 0
+        self.total_frames_wrote = 0
+        self.total_frames = len(self.video_files) * self.frames_per_video
         
         # GPU capabilities detection
         self.use_gpu = False
@@ -51,7 +55,7 @@ class VideoConcatenationWorker(QThread):
         
         return frames
 
-    def cpu_extract_frames(self, video_path, frame_indices, width, height):
+    def cpu_extract_frames(self, video_path, frame_indices, total_frames, width, height):
         frames = []
         cap = cv2.VideoCapture(str(video_path))
         
@@ -66,9 +70,16 @@ class VideoConcatenationWorker(QThread):
                 frame = cv2.resize(frame, (width, height))
             
             frames.append(frame)
-        
+            self.total_frames_read += 1
+            self.updateProgressBar()
+
         cap.release()
         return frames
+    
+    def updateProgressBar(self):
+        stage_one = int((self.total_frames_read / self.total_frames) * 80)
+        stage_two = int((self.total_frames_wrote / self.total_frames) * 20)
+        self.progress.emit(stage_one + stage_two)
 
     def run(self):
         try:
@@ -89,11 +100,8 @@ class VideoConcatenationWorker(QThread):
                 raise Exception(f"Unsupported output format: {self.output_format}")
 
             out = cv2.VideoWriter(str(self.output_path), fourcc, self.output_fps, (width, height))
-            
-            total_frames = len(self.video_files) * self.frames_per_video
-            processed_frames = 0
 
-            # Frame extraction logic
+            # Process every video
             for video_path in self.video_files:
                 cap = cv2.VideoCapture(str(video_path))
                 total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -104,12 +112,13 @@ class VideoConcatenationWorker(QThread):
 
                 # Choose extraction method based on GPU availability
                 extract_func = self.gpu_extract_frames if self.use_gpu else self.cpu_extract_frames
-                frames = extract_func(video_path, frame_indices, width, height)
+                # Gets list of frames
+                frames = extract_func(video_path, frame_indices, self.total_frames, width, height)
 
                 for frame in frames:
                     out.write(frame)
-                    processed_frames += 1
-                    self.progress.emit(int((processed_frames / total_frames) * 100))
+                    self.total_frames_wrote += 1
+                    self.updateProgressBar()
 
             out.release()
             self.finished.emit()
