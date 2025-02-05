@@ -17,7 +17,8 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libegl1-mesa libgl1-mesa-glx
+        sudo apt-get install -y libegl1-mesa libgl1-mesa-glx libxcb-xinerama0
+      # Thanks https://stackoverflow.com/questions/60535350/getting-a-core-dumped-python-m-pytest-error-running-pytest-in-jenkins-when
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
