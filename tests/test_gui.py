@@ -1,12 +1,12 @@
 import pytest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QVBoxLayout
 from mediagui.gui import MainWindow
 
 @pytest.fixture
-def app(qtbot):
+def app():
     test_app = QApplication([])
-    qtbot.addWidget(test_app)
-    return test_app
+    yield test_app
+    test_app.quit()
 
 def test_main_window(app, qtbot):
     window = MainWindow()
