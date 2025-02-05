@@ -1,18 +1,27 @@
 # mediaGUI
-## Data preprocessor intended for SLEAP/DLC
-Cross-platform tool (GUI) to concatenate and speed up video(s).
+A minimal GUI application to preprocess video data.
 
-Packaged in Conda, call it in the CLI.
+## Installation
+You can install the package using pip:
+```sh
+pip install mediagui
+```
 
-If replicating the repo to build, run:
-- `conda env create -f environment.yml`
-- `conda activate mediagui`
+## Usage
+To launch the application, simply run:
+```sh
+mediagui
+```
 
-To update dependencies:
-- `conda env export > environment.yml`
+## Compatibility
+| Platform | Python Version |
+|----------|----------------|
+| Windows  | 3.10 |
+| macOS    | 3.10 |
+| Linux    | 3.10 |
 
-To list all the conda environments:
-- `conda info --envs`
+## Contributing
+Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
-To remove environment and its dependencies:
-- `conda remove -n <envname> --all`
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.

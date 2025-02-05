@@ -1,4 +1,5 @@
 # worker.py
+# Last Modified: 2025-02-05
 
 import cv2
 import numpy as np
@@ -30,6 +31,8 @@ class VideoConcatenationWorker(QThread):
                 self.cuda_device = cv2.cuda.Device(0)
                 self.cuda_stream = cv2.cuda.Stream()
                 print("CUDA GPU acceleration available")
+            else:
+                print("CUDA GPU acceleration not available")
         except Exception as e:
             print(f"GPU detection error: {e}")
 
@@ -37,14 +40,19 @@ class VideoConcatenationWorker(QThread):
         frames = []
         cap = cv2.cuda.VideoReader_GPU(str(video_path))
         
+        gpu_resizer = cv2.cuda.createResize((width, height))
+
         for frame_idx in frame_indices:
             try:
                 # GPU-accelerated frame reading
                 gpu_frame = cap.read(frame_idx)
+
+                if not gpu_frame:
+                    print(f'Failed to read frame {frame_idx}!')
+                    continue
                 
                 # Resize on GPU
                 if gpu_frame.size()[0] != height or gpu_frame.size()[1] != width:
-                    gpu_resizer = cv2.cuda.createResize((width, height))
                     gpu_frame = gpu_resizer.compute(gpu_frame, self.cuda_stream)
                 
                 # Download frame to CPU
@@ -53,25 +61,37 @@ class VideoConcatenationWorker(QThread):
             except Exception as e:
                 print(f"GPU frame extraction error: {e}")
         
+        # Sync the CUDA stream
+        self.cuda_stream.waitForCompletion()
+
         return frames
 
     def cpu_extract_frames(self, video_path, frame_indices, total_frames, width, height):
         frames = []
         cap = cv2.VideoCapture(str(video_path))
         
-        for frame_idx in frame_indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+        frame_interval = frame_indices[1] - frame_indices[0]  # Assuming evenly spaced frames
+        next_frame_to_extract = frame_indices[0]
+        
+        current_frame_idx = 0
+        
+        while current_frame_idx <= max(frame_indices):
             ret, frame = cap.read()
             
             if not ret:
                 break
             
-            if frame.shape[1] != width or frame.shape[0] != height:
-                frame = cv2.resize(frame, (width, height))
-            
-            frames.append(frame)
-            self.total_frames_read += 1
-            self.updateProgressBar()
+            if current_frame_idx == next_frame_to_extract:
+                if frame.shape[1] != width or frame.shape[0] != height:
+                    frame = cv2.resize(frame, (width, height))
+                
+                frames.append(frame)
+                self.total_frames_read += 1
+                self.updateProgressBar()
+                
+                next_frame_to_extract += frame_interval
+
+            current_frame_idx += 1
 
         cap.release()
         return frames
@@ -83,38 +103,54 @@ class VideoConcatenationWorker(QThread):
 
     def run(self):
         try:
-            # First video properties detection
+            # Get width and height from the first video
             first_video = cv2.VideoCapture(str(self.video_files[0]))
+            if not first_video.isOpened():
+                raise Exception(f"Failed to open video: {self.video_files[0]}")
             width = int(first_video.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(first_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
             first_video.release()
 
-            # Codec configuration (previous implementation)
+            # Codec configuration
             if self.output_format.lower() == 'mp4':
-                fourcc = cv2.VideoWriter_fourcc(*('avc1' if platform.system() == 'Darwin' else 
-                                                  'H264' if platform.system() == 'Windows' else 
-                                                  'mp4v'))
+                if platform.system() == 'Darwin':
+                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                elif platform.system() == 'Windows':
+                    fourcc = cv2.VideoWriter_fourcc(*'H264')
+                else:
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             elif self.output_format.lower() == 'avi':
-                fourcc = cv2.VideoWriter_fourcc(*('XVID' if platform.system() == 'Windows' else 'MJPG'))
+                if platform.system() == 'Windows':
+                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                else:
+                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
             else:
                 raise Exception(f"Unsupported output format: {self.output_format}")
 
             out = cv2.VideoWriter(str(self.output_path), fourcc, self.output_fps, (width, height))
+            if not out.isOpened():
+                raise Exception(f"Failed to open output video: {self.output_path}")
 
-            # Process every video
+            # Process videos
             for video_path in self.video_files:
                 cap = cv2.VideoCapture(str(video_path))
+                if not cap.isOpened():
+                    raise Exception(f"Failed to open video: {video_path}")
                 total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 cap.release()
 
-                frame_indices = list(range(total_video_frames)) if total_video_frames < self.frames_per_video \
-                    else list(np.linspace(0, total_video_frames - 1, self.frames_per_video, dtype=int))
+                # If the video has less frames than the desired frames per video, extract all frames
+                if total_video_frames < self.frames_per_video:
+                    frame_indices = list(range(total_video_frames))
+                # Otherwise, extract evenly spaced frames
+                else:
+                    frame_indices = list(np.linspace(0, total_video_frames - 1, self.frames_per_video, dtype=int))
 
-                # Choose extraction method based on GPU availability
+                # Select extract frames based on GPU availability
                 extract_func = self.gpu_extract_frames if self.use_gpu else self.cpu_extract_frames
-                # Gets list of frames
                 frames = extract_func(video_path, frame_indices, self.total_frames, width, height)
 
+                # Write frames to output video
                 for frame in frames:
                     out.write(frame)
                     self.total_frames_wrote += 1

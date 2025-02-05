@@ -1,4 +1,5 @@
 # gui.py
+# Last Modified: 2025-02-05
 
 import sys
 from pathlib import Path
@@ -6,7 +7,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel,
                             QProgressBar, QSpinBox, QComboBox, QGroupBox)
-from worker import VideoConcatenationWorker
+from mediagui.worker import VideoConcatenationWorker
 
 # note: variable 'mode' does absolutely nothing
 
