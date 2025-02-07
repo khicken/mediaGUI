@@ -2,7 +2,9 @@
 A minimal GUI application to preprocess video data.
 
 ## Installation
-You can install the package using pip:
+The recommended method is installing the standalone executable on GitHub (available for Windows and MacOS).
+
+Otherwise, you can install the package using pip:
 ```sh
 pip install mediagui
 ```

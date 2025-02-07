@@ -37,8 +37,6 @@ class VideoConcatenationWorker(QThread):
                 print("CUDA GPU acceleration not available")
         except Exception as e:
             print(f"GPU detection error: {e}")
-        
-        self.is_running = True
 
     def gpu_extract_frames(self, video_path, frame_indices, width, height, batch_size=10):
         frames = []
@@ -138,8 +136,6 @@ class VideoConcatenationWorker(QThread):
 
             # Process videos
             for video_path in self.video_files:
-                if not self.is_running:
-                    break
                 cap = cv2.VideoCapture(str(video_path))
                 if not cap.isOpened():
                     raise Exception(f"Failed to open video: {video_path}")
@@ -162,23 +158,14 @@ class VideoConcatenationWorker(QThread):
                     self.out.write(frame)
                     self.total_frames_wrote += 1
                     self.updateProgressBar()
-            
-            if self.is_running:
-                end_time = time.time()
-                print(f"Concatenation complete in {end_time - start_time:.2f} seconds")
+        
+            end_time = time.time()
+            print(f"Concatenation complete in {end_time - start_time:.2f} seconds")
         except Exception as e:
             self.error.emit(str(e))
         finally:
             try:
                 self.out.release()
-                if self.is_running:
-                    self.finished.emit()
+                self.finished.emit()
             except:
                 pass
-    
-    def exit(self):
-        super().exit()
-        self.is_running = False
-        self.wait()
-        if self.out:
-            self.out.release()

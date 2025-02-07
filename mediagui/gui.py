@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
     def concat_videos(self):
         if self.concat_button.text() == "Cancel":
             self.status_label.setText("Processing cancelled.")
-            self.worker.exit()
+            self.worker.terminate()
             self.reset_ui()
             return
         if not self.video_files:
@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
             self.last_save_dir = output_path.parent
             if output_path.suffix.lower() not in output_format_dict:
                 output_path = output_path.with_suffix(self.output_format_box.currentText())
-                print('stinky! invalid suffix format')
+                print("stinky! invalid suffix format but it's been patched")
                 
             self.progress_bar.setVisible(True)
             self.progress_bar.setValue(0)
@@ -171,7 +171,9 @@ class MainWindow(QMainWindow):
             self.worker.progress.connect(self.update_progress)
             self.worker.finished.connect(self.concatenation_finished)
             self.worker.error.connect(self.concatenation_error)
+            self.status_label.setText("Processing...")
             self.worker.start()
+            self.status_label.setText("Processing.....")
             
             # Toggle cancel
             self.concat_button.setText("Cancel")
