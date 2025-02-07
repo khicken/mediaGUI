@@ -5,7 +5,7 @@ set -e
 
 # Check if an argument is provided for the executable name
 if [ -z "$1" ]; then
-    EXECUTABLE_NAME="mediagui-executable"
+    EXECUTABLE_NAME="mediagui"
 else
     EXECUTABLE_NAME="$1"
 fi
@@ -20,7 +20,7 @@ case "$OS_TYPE" in
 esac
 
 # Define the version
-VERSION="v0.1.1a0"
+VERSION="v0.1.2a0"
 
 # Append the OS name and version to the executable name
 EXECUTABLE_NAME="${EXECUTABLE_NAME}-${OS_NAME}-${VERSION}"

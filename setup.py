@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='mediagui',
-    version='0.1.1-alpha',
+    version='0.1.2a0',      # PEP 440 versioning
     author='Kaleb Kim',
     author_email='mail@kalebkim.com',
     description='A Python package with a GUI for video formatting',

@@ -7,7 +7,10 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel,
                             QProgressBar, QSpinBox, QComboBox, QAbstractItemView)
-from mediagui.worker import VideoConcatenationWorker
+if __name__ == "__main__" or __package__ is None:
+    from worker import VideoConcatenationWorker
+else:
+    from mediagui.worker import VideoConcatenationWorker
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -45,7 +48,7 @@ class MainWindow(QMainWindow):
 
         # First line: Extract frames
         self.frame_extract_spinbox = QSpinBox()
-        self.frame_extract_spinbox.setRange(0, 1000)
+        self.frame_extract_spinbox.setRange(0, 10000)
         self.frame_extract_spinbox.setValue(100)
         self.frame_extract_spinbox.setMinimumWidth(50)
         extract_layout.addWidget(QLabel("Extract "))
@@ -126,7 +129,7 @@ class MainWindow(QMainWindow):
     def concat_videos(self):
         if self.concat_button.text() == "Cancel":
             self.status_label.setText("Processing cancelled.")
-            self.worker.terminate()
+            self.worker.cancel()
             self.reset_ui()
             return
         if not self.video_files:
@@ -173,7 +176,6 @@ class MainWindow(QMainWindow):
             self.worker.error.connect(self.concatenation_error)
             self.status_label.setText("Processing...")
             self.worker.start()
-            self.status_label.setText("Processing.....")
             
             # Toggle cancel
             self.concat_button.setText("Cancel")
