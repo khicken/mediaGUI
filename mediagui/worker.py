@@ -3,8 +3,10 @@
 
 import cv2
 import numpy as np
-import platform
+import time, platform
 from PyQt6.QtCore import QThread, pyqtSignal
+
+debug = True
 
 class VideoConcatenationWorker(QThread):
     progress = pyqtSignal(int)
@@ -17,7 +19,7 @@ class VideoConcatenationWorker(QThread):
         self.output_path = output_path
         self.frames_per_video = frames_per_video
         self.output_fps = output_fps
-        self.output_format = output_format
+        self.output_format = output_format[1:] if output_format.startswith('.') else output_format
 
         self.total_frames_read = 0
         self.total_frames_wrote = 0
@@ -25,73 +27,77 @@ class VideoConcatenationWorker(QThread):
         
         # GPU capabilities detection
         self.use_gpu = False
+        print(cv2.cuda.getCudaEnabledDeviceCount())
         try:
-            if platform.system() != 'Darwin' and cv2.cuda.getCudaEnabledDeviceCount() > 0:
+            if platform.system() != 'Darwin' and cv2.cuda.getCudaEnabledDeviceCount():
                 self.use_gpu = True
-                self.cuda_device = cv2.cuda.Device(0)
-                self.cuda_stream = cv2.cuda.Stream()
+                self.cuda_device = cv2.cuda.getDevice()
                 print("CUDA GPU acceleration available")
             else:
                 print("CUDA GPU acceleration not available")
         except Exception as e:
             print(f"GPU detection error: {e}")
+        
+        self.is_running = True
 
-    def gpu_extract_frames(self, video_path, frame_indices, width, height):
+    def gpu_extract_frames(self, video_path, frame_indices, width, height, batch_size=10):
         frames = []
-        cap = cv2.cuda.VideoReader_GPU(str(video_path))
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise ValueError(f"Failed to open video file: {video_path}")
         
-        gpu_resizer = cv2.cuda.createResize((width, height))
-
-        for frame_idx in frame_indices:
-            try:
-                # GPU-accelerated frame reading
-                gpu_frame = cap.read(frame_idx)
-
-                if not gpu_frame:
-                    print(f'Failed to read frame {frame_idx}!')
-                    continue
-                
-                # Resize on GPU
-                if gpu_frame.size()[0] != height or gpu_frame.size()[1] != width:
-                    gpu_frame = gpu_resizer.compute(gpu_frame, self.cuda_stream)
-                
-                # Download frame to CPU
-                frame = gpu_frame.download()
-                frames.append(frame)
-            except Exception as e:
-                print(f"GPU frame extraction error: {e}")
+        stream = cv2.cuda.Stream()
+        gpu_resizer = cv2.cuda.createResizeFilter(
+            src_size=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 
+                    int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
+            dst_size=(width, height),
+            interpolation=cv2.INTER_LINEAR
+        )
         
-        # Sync the CUDA stream
-        self.cuda_stream.waitForCompletion()
-
+        for i in range(0, len(frame_indices), batch_size):
+            batch_indices = frame_indices[i:i + batch_size]
+            for frame_idx in batch_indices:
+                try:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                    ret, cpu_frame = cap.read()
+                    if not ret:
+                        print(f'Failed to read frame {frame_idx}!')
+                        continue
+                    
+                    gpu_frame = cv2.cuda.GpuMat()
+                    gpu_frame.upload(cpu_frame, stream)
+                    
+                    gpu_resized = cv2.cuda.GpuMat()
+                    gpu_resizer.apply(gpu_frame, gpu_resized, stream)
+                    
+                    resized_frame = gpu_resized.download(stream)
+                    frames.append(resized_frame)
+                    self.total_frames_read += 1
+                except Exception as e:
+                    print(f"GPU frame extraction error: {e}")
+        
+        stream.waitForCompletion()
+        cap.release()
         return frames
 
-    def cpu_extract_frames(self, video_path, frame_indices, total_frames, width, height):
+    def cpu_extract_frames(self, video_path, frame_indices, width, height, batch_size=10):
         frames = []
         cap = cv2.VideoCapture(str(video_path))
         
-        frame_interval = frame_indices[1] - frame_indices[0]  # Assuming evenly spaced frames
-        next_frame_to_extract = frame_indices[0]
-        
-        current_frame_idx = 0
-        
-        while current_frame_idx <= max(frame_indices):
-            ret, frame = cap.read()
-            
-            if not ret:
-                break
-            
-            if current_frame_idx == next_frame_to_extract:
+        for i in range(0, len(frame_indices), batch_size):
+            batch_indices = frame_indices[i:i + batch_size]
+            for frame_idx in batch_indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
                 if frame.shape[1] != width or frame.shape[0] != height:
                     frame = cv2.resize(frame, (width, height))
                 
                 frames.append(frame)
                 self.total_frames_read += 1
                 self.updateProgressBar()
-                
-                next_frame_to_extract += frame_interval
-
-            current_frame_idx += 1
 
         cap.release()
         return frames
@@ -103,6 +109,8 @@ class VideoConcatenationWorker(QThread):
 
     def run(self):
         try:
+            start_time = time.time()
+
             # Get width and height from the first video
             first_video = cv2.VideoCapture(str(self.video_files[0]))
             if not first_video.isOpened():
@@ -116,23 +124,22 @@ class VideoConcatenationWorker(QThread):
                 if platform.system() == 'Darwin':
                     fourcc = cv2.VideoWriter_fourcc(*'avc1')
                 elif platform.system() == 'Windows':
-                    fourcc = cv2.VideoWriter_fourcc(*'H264')
+                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
                 else:
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             elif self.output_format.lower() == 'avi':
-                if platform.system() == 'Windows':
-                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                else:
-                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
             else:
                 raise Exception(f"Unsupported output format: {self.output_format}")
 
-            out = cv2.VideoWriter(str(self.output_path), fourcc, self.output_fps, (width, height))
-            if not out.isOpened():
+            self.out = cv2.VideoWriter(str(self.output_path), fourcc, self.output_fps, (width, height))
+            if not self.out.isOpened():
                 raise Exception(f"Failed to open output video: {self.output_path}")
 
             # Process videos
             for video_path in self.video_files:
+                if not self.is_running:
+                    break
                 cap = cv2.VideoCapture(str(video_path))
                 if not cap.isOpened():
                     raise Exception(f"Failed to open video: {video_path}")
@@ -148,20 +155,30 @@ class VideoConcatenationWorker(QThread):
 
                 # Select extract frames based on GPU availability
                 extract_func = self.gpu_extract_frames if self.use_gpu else self.cpu_extract_frames
-                frames = extract_func(video_path, frame_indices, self.total_frames, width, height)
+                frames = extract_func(video_path, frame_indices, width, height)
 
                 # Write frames to output video
                 for frame in frames:
-                    out.write(frame)
+                    self.out.write(frame)
                     self.total_frames_wrote += 1
                     self.updateProgressBar()
-
-            out.release()
-            self.finished.emit()
+            
+            if self.is_running:
+                end_time = time.time()
+                print(f"Concatenation complete in {end_time - start_time:.2f} seconds")
         except Exception as e:
             self.error.emit(str(e))
         finally:
             try:
-                out.release()
+                self.out.release()
+                if self.is_running:
+                    self.finished.emit()
             except:
                 pass
+    
+    def exit(self):
+        super().exit()
+        self.is_running = False
+        self.wait()
+        if self.out:
+            self.out.release()

@@ -1,18 +1,16 @@
 # gui.py
-# Last Modified: 2025-02-05
+# Last Modified: 2025-02-07
 
 import sys
 from pathlib import Path
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QListWidget, QFileDialog, QLabel,
-                            QProgressBar, QSpinBox, QComboBox, QGroupBox)
+                            QProgressBar, QSpinBox, QComboBox, QAbstractItemView)
 from mediagui.worker import VideoConcatenationWorker
 
-# note: variable 'mode' does absolutely nothing
-
 class MainWindow(QMainWindow):
-    def __init__(self, mode=0):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("mediaGUI")
         self.setMinimumSize(400, 400)
@@ -23,6 +21,7 @@ class MainWindow(QMainWindow):
         
         ## File Selection
         self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         layout.addWidget(QLabel("Selected Videos:"))
         layout.addWidget(self.file_list)
         
@@ -51,8 +50,8 @@ class MainWindow(QMainWindow):
         self.frame_extract_spinbox.setMinimumWidth(50)
         extract_layout.addWidget(QLabel("Extract "))
         extract_layout.addWidget(self.frame_extract_spinbox)
-        self.frame_extract_suffix = 'frames'
-        extract_layout.addWidget(QLabel(f'{self.frame_extract_suffix} per video'))
+        self.frame_extract_suffix_label = QLabel('frames per video')
+        extract_layout.addWidget(self.frame_extract_suffix_label)
         extract_layout.addStretch()  # Push widgets to the left
         self.frame_extract_spinbox.valueChanged.connect(self.update_step_suffix)
 
@@ -66,10 +65,11 @@ class MainWindow(QMainWindow):
         output_fps_layout.addStretch()  # Push widgets to the left
 
         # Third line: Output format
-        self.output_format_combobox = QComboBox()
-        self.output_format_combobox.addItems(['mp4', 'avi'])
+        self.output_format_box = QComboBox()
+        self.output_formats = ['.mp4', '.avi']
+        self.output_format_box.addItems(self.output_formats)
         output_format_layout.addWidget(QLabel("Output format: "))
-        output_format_layout.addWidget(self.output_format_combobox)
+        output_format_layout.addWidget(self.output_format_box)
         output_format_layout.addStretch()  # Push widgets to the left
 
         # Add all horizontal layouts to the main layout
@@ -82,22 +82,23 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
         
-        # Concatenate!
-        self.concat_button = QPushButton("Process video(s)")
+        # Concatenate
+        self.concat_button = QPushButton("Process videos")
         self.concat_button.clicked.connect(self.concat_videos)
+        self.concat_button.setEnabled(False)
         layout.addWidget(self.concat_button)
         
         self.status_label = QLabel("")
         layout.addWidget(self.status_label)
         
-        self.mode = mode    # not needed
         self.video_files = []
+        self.last_save_dir = Path.home()
 
     def add_videos(self):
         files, _ = QFileDialog.getOpenFileNames(
             self,
             "Select Videos",
-            str(Path.home()),
+            str(self.last_save_dir),
             "Video Files (*.mp4 *.avi *.mov *.mkv);;All Files (*.*)"
         )
         
@@ -105,6 +106,11 @@ class MainWindow(QMainWindow):
             self.video_files.extend([Path(f) for f in files])
             self.file_list.clear()
             self.file_list.addItems([f.name for f in self.video_files])
+            # concat button
+            cbtxt = "Process video" if len(self.video_files) == 1 else "Process videos"
+            self.concat_button.setText(cbtxt)
+            self.concat_button.setEnabled(True)
+
 
     def remove_selected(self):
         selected_items = self.file_list.selectedItems()
@@ -114,25 +120,38 @@ class MainWindow(QMainWindow):
         
         self.file_list.clear()
         self.file_list.addItems([f.name for f in self.video_files])
+        if not self.video_files:
+            self.concat_button.setEnabled(False)
 
     def concat_videos(self):
+        if self.concat_button.text() == "Cancel":
+            self.status_label.setText("Processing cancelled.")
+            self.worker.exit()
+            self.reset_ui()
+            return
         if not self.video_files:
             self.status_label.setText("Please select videos first!")
             self.concat_button.setEnabled(True)
             return
 
-        default_name = "concatenated_video.mp4"
+        default_name = f'concatenated_video{self.output_format_box.currentText()}'
+        output_format_dict = {
+            '.mp4': 'MP4 Video (*.mp4)',
+            '.avi': 'AVI Video (*.avi)'
+        }
         output_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Concatenated Video",
             str(Path.home() / default_name),
-            "MP4 Video (*.mp4)"
+            output_format_dict[self.output_format_box.currentText()]
         )
         
         if output_path:
             output_path = Path(output_path)
-            if output_path.suffix.lower() != '.mp4':
-                output_path = output_path.with_suffix('.mp4')
+            self.last_save_dir = output_path.parent
+            if output_path.suffix.lower() not in output_format_dict:
+                output_path = output_path.with_suffix(self.output_format_box.currentText())
+                print('stinky! invalid suffix format')
                 
             self.progress_bar.setVisible(True)
             self.progress_bar.setValue(0)
@@ -140,19 +159,23 @@ class MainWindow(QMainWindow):
             self.remove_button.setEnabled(False)
             self.frame_extract_spinbox.setEnabled(False)
             self.output_fps_spinbox.setEnabled(False)
-            self.output_format_combobox.setEnabled(False)
+            self.output_format_box.setEnabled(False)
             
             self.worker = VideoConcatenationWorker(
                 self.video_files, 
                 output_path,
                 frames_per_video=self.frame_extract_spinbox.value(),
                 output_fps=self.output_fps_spinbox.value(),
-                output_format=self.output_format_combobox.currentText()
+                output_format=self.output_format_box.currentText()
             )
             self.worker.progress.connect(self.update_progress)
             self.worker.finished.connect(self.concatenation_finished)
             self.worker.error.connect(self.concatenation_error)
             self.worker.start()
+            
+            # Toggle cancel
+            self.concat_button.setText("Cancel")
+            self.concat_button.setEnabled(True)
         else:
             self.concat_button.setEnabled(True)
 
@@ -160,7 +183,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(value)
     
     def update_step_suffix(self, value):
-        self.frame_extract_suffix = "frame" if value == 1 else "frames"
+        self.frame_extract_suffix_label.setText("frame per video" if value == 1 else "frames per video")
         
     def concatenation_finished(self):
         self.status_label.setText("Concatenation complete!")
@@ -176,15 +199,14 @@ class MainWindow(QMainWindow):
         self.remove_button.setEnabled(True)
         self.frame_extract_spinbox.setEnabled(True)
         self.output_fps_spinbox.setEnabled(True)
-        self.output_format_combobox.setEnabled(True)
+        self.output_format_box.setEnabled(True)
         self.concat_button.setEnabled(True)
+        cbtxt = "Process video" if len(self.video_files) == 1 else "Process videos"
+        self.concat_button.setText(cbtxt)
 
-def main(mode=0):
+def main():
     app = QApplication(sys.argv)
-    if mode:
-        window = MainWindow(mode)
-    else:
-        window = MainWindow()
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())
 
