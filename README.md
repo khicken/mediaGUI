@@ -2,7 +2,7 @@
 A minimal GUI application to preprocess video data.
 
 ## Installation
-The recommended method is installing the standalone executable on GitHub (available for Windows and MacOS).
+The recommended method is installing the standalone executable on [GitHub](https://github.com/khicken/mediaGUI) (available for Windows and MacOS).
 
 Otherwise, you can install the package using pip:
 ```sh

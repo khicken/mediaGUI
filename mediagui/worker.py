@@ -1,7 +1,8 @@
 # worker.py
-# Last Modified: 2025-02-05
+# Last Modified: 2025-02-07
 
 import cv2
+import os
 import numpy as np
 import time, platform
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -27,14 +28,11 @@ class VideoConcatenationWorker(QThread):
         
         # GPU capabilities detection
         self.use_gpu = False
-        print(cv2.cuda.getCudaEnabledDeviceCount())
         try:
             if platform.system() != 'Darwin' and cv2.cuda.getCudaEnabledDeviceCount():
                 self.use_gpu = True
-                self.cuda_device = cv2.cuda.getDevice()
-                print("CUDA GPU acceleration available")
-            else:
-                print("CUDA GPU acceleration not available")
+                cv2.cuda.setDevice(0)
+                print(f"Using CUDA device: {cv2.cuda.getDeviceName(0)}")
         except Exception as e:
             print(f"GPU detection error: {e}")
 
@@ -169,3 +167,10 @@ class VideoConcatenationWorker(QThread):
                 self.finished.emit()
             except:
                 pass
+    
+    def cancel(self):
+        if self.out:
+            self.out.release()
+        if os.path.exists(self.output_path):
+            os.remove(self.output_path)
+        self.terminate()
