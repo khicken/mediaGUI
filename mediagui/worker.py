@@ -28,14 +28,11 @@ class VideoConcatenationWorker(QThread):
         
         # GPU capabilities detection
         self.use_gpu = False
-        print(cv2.cuda.getCudaEnabledDeviceCount())
         try:
             if platform.system() != 'Darwin' and cv2.cuda.getCudaEnabledDeviceCount():
                 self.use_gpu = True
                 cv2.cuda.setDevice(0)
                 print(f"Using CUDA device: {cv2.cuda.getDeviceName(0)}")
-            else:
-                print("CUDA GPU acceleration not available.")
         except Exception as e:
             print(f"GPU detection error: {e}")
 

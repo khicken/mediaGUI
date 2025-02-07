@@ -5,26 +5,26 @@ import sys
 from pathlib import Path
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                            QPushButton, QListWidget, QFileDialog, QLabel,
-                            QProgressBar, QSpinBox, QComboBox, QAbstractItemView)
+                            QPushButton, QFileDialog, QLabel, QProgressBar, QSpinBox, QComboBox)
 if __name__ == "__main__" or __package__ is None:
     from worker import VideoConcatenationWorker
+    from list_widget import CustomListWidget
 else:
     from mediagui.worker import VideoConcatenationWorker
+    from mediagui.list_widget import CustomListWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("mediaGUI")
-        self.setMinimumSize(400, 400)
+        self.setMinimumSize(480, 480)
         
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         layout = QVBoxLayout(main_widget)
         
         ## File Selection
-        self.file_list = QListWidget()
-        self.file_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
+        self.file_list = CustomListWidget(self)
         layout.addWidget(QLabel("Selected Videos:"))
         layout.addWidget(self.file_list)
         
@@ -95,18 +95,20 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status_label)
         
         self.video_files = []
+        self.last_vid_dir = Path.home()
         self.last_save_dir = Path.home()
 
     def add_videos(self):
         files, _ = QFileDialog.getOpenFileNames(
             self,
             "Select Videos",
-            str(self.last_save_dir),
+            str(self.last_vid_dir),
             "Video Files (*.mp4 *.avi *.mov *.mkv);;All Files (*.*)"
         )
         
         if files:
             self.video_files.extend([Path(f) for f in files])
+            self.last_vid_dir = Path(files[-1])
             self.file_list.clear()
             self.file_list.addItems([f.name for f in self.video_files])
             # concat button
@@ -117,8 +119,10 @@ class MainWindow(QMainWindow):
 
     def remove_selected(self):
         selected_items = self.file_list.selectedItems()
-        for item in selected_items:
-            idx = self.file_list.row(item)
+        indices_to_remove = [self.file_list.row(item) for item in selected_items]
+        
+        # Remove items from video_files in reverse order to avoid index issues
+        for idx in sorted(indices_to_remove, reverse=True):
             del self.video_files[idx]
         
         self.file_list.clear()
@@ -151,7 +155,7 @@ class MainWindow(QMainWindow):
         
         if output_path:
             output_path = Path(output_path)
-            self.last_save_dir = output_path.parent
+            self.last_save_dir = output_path
             if output_path.suffix.lower() not in output_format_dict:
                 output_path = output_path.with_suffix(self.output_format_box.currentText())
                 print("stinky! invalid suffix format but it's been patched")
