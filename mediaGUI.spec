@@ -1,4 +1,3 @@
-# mediaGUI.spec
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
@@ -42,10 +41,10 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # Ensure this is set to False
-    windowed=True,  # Ensure this is set to True
-    onefile=True,   # Enable onefile flag
+    console=False,
+    windowed=True,
 )
+
 coll = COLLECT(
     exe,
     a.binaries,
