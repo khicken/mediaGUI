@@ -20,18 +20,21 @@ case "$OS_TYPE" in
 esac
 
 # Define the version
-VERSION="v0.1.2a0"
+VERSION="v0.1.2a2"
 
 # Append the OS name and version to the executable name
 EXECUTABLE_NAME="${EXECUTABLE_NAME}-${OS_NAME}-${VERSION}"
 
 # Remove previous builds
-rm -rf build/ dist/ *.spec
+rm -rf build/ dist/
 
 # Install PyInstaller if not already installed
 python -m pip install --upgrade pyinstaller
 
+# Set the EXECUTABLE_NAME environment variable
+export EXECUTABLE_NAME="$EXECUTABLE_NAME"
+
 # Build the executable with PyInstaller
-pyinstaller --onefile --name "$EXECUTABLE_NAME" mediagui/gui.py
+pyinstaller mediaGUI.spec
 
 echo "Executable created successfully in the dist/$EXECUTABLE_NAME directory."

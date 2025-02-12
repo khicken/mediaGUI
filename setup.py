@@ -22,6 +22,9 @@ setup(
             'mediagui=mediagui.gui:main',
         ],
     },
+    package_data={
+        'mediagui': ['openh264-1.8.0-win64.dll'],
+    },
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',

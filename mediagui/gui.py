@@ -6,12 +6,13 @@ from pathlib import Path
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QFileDialog, QLabel, QProgressBar, QSpinBox, QComboBox)
-if __name__ == "__main__" or __package__ is None:
-    from worker import VideoConcatenationWorker
-    from list_widget import CustomListWidget
-else:
+
+if __package__:  # Running as a package
     from mediagui.worker import VideoConcatenationWorker
     from mediagui.list_widget import CustomListWidget
+else:
+    from worker import VideoConcatenationWorker
+    from list_widget import CustomListWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):
