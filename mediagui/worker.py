@@ -2,7 +2,7 @@
 # Last Modified: 2025-02-07
 
 import cv2
-import os, bz2
+import os, bz2, tempfile
 import numpy as np
 import time, platform
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -44,22 +44,28 @@ class VideoConcatenationWorker(QThread):
 
     def download_and_unpack_openh264_dll(self):
         url = "http://ciscobinary.openh264.org/openh264-1.8.0-win64.dll.bz2"
-        compressed_path = os.path.join(os.path.dirname(__file__), "openh264-1.8.0-win64.dll.bz2")
-        dll_path = os.path.join(os.path.dirname(__file__), "openh264-1.8.0-win64.dll")
-        
-        if not os.path.exists(dll_path):
-            print("Downloading OpenH264 DLL...")
-            urllib.request.urlretrieve(url, compressed_path)
-            print("Download complete. Unpacking...")
+        temp_dir = tempfile.mkdtemp()
+        compressed_path = os.path.join(temp_dir, "openh264-1.8.0-win64.dll.bz2")
+        dll_path = os.path.join(temp_dir, "openh264-1.8.0-win64.dll")
+
+        try:
+            if not os.path.exists(dll_path):
+                print("Downloading OpenH264 DLL...")
+                urllib.request.urlretrieve(url, compressed_path)
+                print("Download complete. Unpacking...")
+                
+                with bz2.BZ2File(compressed_path, 'rb') as compressed_file:
+                    with open(dll_path, 'wb') as dll_file:
+                        dll_file.write(compressed_file.read())
+                
+                os.remove(compressed_path)
+                print("Unpacking complete.")
+            else:
+                print("OpenH264 DLL already exists.")
+        except Exception as e:
+            print(f"Error downloading OpenH264 DLL: {e}")
+            self.error.emit(str(e))
             
-            with bz2.BZ2File(compressed_path, 'rb') as compressed_file:
-                with open(dll_path, 'wb') as dll_file:
-                    dll_file.write(compressed_file.read())
-            
-            os.remove(compressed_path)
-            print("Unpacking complete.")
-        else:
-            print("OpenH264 DLL already exists.")
 
     def gpu_extract_frames(self, video_path, frame_indices, width, height, batch_size=10):
         frames = []
