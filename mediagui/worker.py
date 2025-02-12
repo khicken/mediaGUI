@@ -2,10 +2,11 @@
 # Last Modified: 2025-02-07
 
 import cv2
-import os
+import os, bz2
 import numpy as np
 import time, platform
 from PyQt6.QtCore import QThread, pyqtSignal
+import urllib.request
 
 debug = True
 
@@ -35,6 +36,30 @@ class VideoConcatenationWorker(QThread):
                 print(f"Using CUDA device: {cv2.cuda.getDeviceName(0)}")
         except Exception as e:
             print(f"GPU detection error: {e}")
+
+    def sanitize_path(self, path):
+        path = os.path.abspath(path)
+        path = os.path.normpath(path)
+        return path
+
+    def download_and_unpack_openh264_dll(self):
+        url = "http://ciscobinary.openh264.org/openh264-1.8.0-win64.dll.bz2"
+        compressed_path = os.path.join(os.path.dirname(__file__), "openh264-1.8.0-win64.dll.bz2")
+        dll_path = os.path.join(os.path.dirname(__file__), "openh264-1.8.0-win64.dll")
+        
+        if not os.path.exists(dll_path):
+            print("Downloading OpenH264 DLL...")
+            urllib.request.urlretrieve(url, compressed_path)
+            print("Download complete. Unpacking...")
+            
+            with bz2.BZ2File(compressed_path, 'rb') as compressed_file:
+                with open(dll_path, 'wb') as dll_file:
+                    dll_file.write(compressed_file.read())
+            
+            os.remove(compressed_path)
+            print("Unpacking complete.")
+        else:
+            print("OpenH264 DLL already exists.")
 
     def gpu_extract_frames(self, video_path, frame_indices, width, height, batch_size=10):
         frames = []
@@ -108,19 +133,22 @@ class VideoConcatenationWorker(QThread):
             start_time = time.time()
 
             # Get width and height from the first video
-            first_video = cv2.VideoCapture(str(self.video_files[0]))
+            first_video = cv2.VideoCapture(self.sanitize_path(str(self.video_files[0])))
             if not first_video.isOpened():
                 raise Exception(f"Failed to open video: {self.video_files[0]}")
             width = int(first_video.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(first_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
             first_video.release()
 
+            if platform.system() == 'Windows':
+                self.download_and_unpack_openh264_dll()
+
             # Codec configuration
             if self.output_format.lower() == 'mp4':
                 if platform.system() == 'Darwin':
                     fourcc = cv2.VideoWriter_fourcc(*'avc1')
                 elif platform.system() == 'Windows':
-                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 else:
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             elif self.output_format.lower() == 'avi':
