@@ -2,8 +2,10 @@
 A minimal GUI application to effficiently preprocess video data. Useful for SLEAP, DeepLabCut, etc.
 
 ## Installation
-The recommended method is unzipping and running the executable on [GitHub](https://github.com/khicken/mediaGUI/releases) (available for Windows and MacOS).
+### Executable (recommended)
+The recommended installation is to directly download the executable on [GitHub](https://github.com/khicken/mediaGUI/releases). Available for Windows and MacOS.
 
+### Pip
 Otherwise, you can install the package using pip:
 ```sh
 pip install mediagui
