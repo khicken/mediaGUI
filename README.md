@@ -6,7 +6,7 @@ A minimal GUI application to effficiently preprocess video data. Useful for SLEA
 The recommended installation is to directly download the executable on [GitHub](https://github.com/khicken/mediaGUI/releases). Available for Windows and MacOS.
 
 ### Pip
-Otherwise, you can install the package using pip:
+Otherwise, install the software as a package using pip:
 ```sh
 pip install mediagui
 ```
