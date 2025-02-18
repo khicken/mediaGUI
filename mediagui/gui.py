@@ -1,16 +1,18 @@
 # gui.py
 # Last Modified: 2025-02-07
 
-import sys
+import sys, os
 from pathlib import Path
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QPushButton, QFileDialog, QLabel, QProgressBar, QSpinBox, QComboBox)
 
-if __package__:  # Running as a package
+if getattr(sys, 'frozen', False):  # Running as a bundled executable
+    sys.path.insert(0, os.path.dirname(sys.executable))
+
+try:
     from mediagui.worker import VideoConcatenationWorker
     from mediagui.list_widget import CustomListWidget
-else:
+except ModuleNotFoundError:
     from worker import VideoConcatenationWorker
     from list_widget import CustomListWidget
 
