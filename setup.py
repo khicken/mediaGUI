@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='mediagui',
-    version='1.0.1',      # PEP 440 versioning
+    version='1.0.2',      # PEP 440 versioning
     author='Kaleb Kim',
     author_email='mail@kalebkim.com',
     description='A Python package with a GUI for video formatting',
@@ -11,7 +11,7 @@ setup(
     url='https://github.com/khicken/mediaGUI',
     packages=find_packages(),
     install_requires=[
-        'numpy>=1.26.0,<2',
+        'numpy>=1.26.0',
         'opencv-python>=4.8.1,<5',
         'PyQt6>=6.6.0,<7',
         'PyQt6-Qt6>=6.6.0,<7',
@@ -30,5 +30,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.10',
+    python_requires='>=3.9',
 )
