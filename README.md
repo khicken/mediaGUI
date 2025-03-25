@@ -29,9 +29,9 @@ mediagui
 ## Compatibility
 | Platform | Python Version |
 |----------|----------------|
-| Windows  | 3.10 |
-| macOS    | 3.10 |
-| Linux    | 3.10 |
+| Windows  | 3.9+ |
+| macOS    | 3.9+ |
+| Linux    | 3.9+ |
 
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request.

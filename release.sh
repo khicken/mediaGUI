@@ -20,7 +20,7 @@ case "$OS_TYPE" in
 esac
 
 # Define the version
-VERSION="v0.1.2a2"
+VERSION="v1.0.0"
 
 # Append the OS name and version to the executable name
 EXECUTABLE_NAME="${EXECUTABLE_NAME}-${OS_NAME}-${VERSION}"
