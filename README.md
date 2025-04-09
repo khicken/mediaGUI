@@ -19,6 +19,9 @@ pip install mediagui
 ### Executable
 Open the executable to launch the application.
 
+Ideally, the concatenated video should contain approximately 30,000 frames.
+
+The total number of selected videos should be chosen such that their combined frame count is close to this target.
 ### Pip
 Launch the application with:
 ```sh
