@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
 
         # First line: Extract frames
         self.frame_extract_spinbox = QSpinBox()
-        self.frame_extract_spinbox.setRange(0, 10000)
+        self.frame_extract_spinbox.setRange(0, 100000)
         self.frame_extract_spinbox.setValue(100)
         self.frame_extract_spinbox.setMinimumWidth(50)
         extract_layout.addWidget(QLabel("Extract "))
