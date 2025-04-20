@@ -7,7 +7,12 @@ Available for Windows and MacOS.
 ### Executable (recommended)
 The recommended installation is to directly download the executable on [GitHub](https://github.com/khicken/mediaGUI/releases).
 
-The Windows installation includes an external library for efficient mp4 processing.
+| Input | Output |
+|----------|----------|
+| mp4  | Fast: mp4 |
+| avi    | avi |
+
+The Windows installation includes an external library for efficient mp4 processing. 
 
 ### Pip
 Otherwise, install the software as a package using [pip](https://pypi.org/project/pip/). It's recommended to install the package in a [virtual envrionment](https://docs.python.org/3/library/venv.html).
