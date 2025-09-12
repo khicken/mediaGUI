@@ -1,7 +1,5 @@
 # mediaGUI
-A minimal GUI application to effficiently preprocess video data. Useful for SLEAP, DeepLabCut, etc.
-
-Available for Windows and MacOS.
+A minimal GUI application to efficiently preprocess video data.
 
 ## Installation
 ### Executable (recommended)
