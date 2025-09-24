@@ -22,7 +22,7 @@ pip install mediagui
 ### Executable
 Open the executable to launch the application.
 
-Ideally, the concatenated video should contain approximately 30,000 frames.
+Ideally, the concatenated video should contain approximately 30,000 frames for the code packages (DeepLabCut, SLEAP, etc.) can process the video without crashing their code packages.
 
 The total number of selected videos should be chosen such that their combined frame count is close to this target.
 ### Pip
