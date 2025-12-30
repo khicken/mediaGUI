@@ -1,6 +1,8 @@
 # mediaGUI
 A minimal GUI application to efficiently preprocess video data.
 
+<img width="638" height="770" alt="image" src="https://github.com/user-attachments/assets/80f94fda-fbf2-441e-8a42-fba93ec79c28" />
+
 ## Installation
 ### Executable (recommended)
 The recommended installation is to directly download the executable on [GitHub](https://github.com/khicken/mediaGUI/releases).
